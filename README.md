@@ -1,24 +1,22 @@
-Frogger - VLAN Hopping
+Frogger2 - VLAN Hopping
 ============================================
 
 Simple VLAN enumeration and hopping script.
 
-Released as open source by NCC Group Plc - http://www.nccgroup.com/
 
-Developed by Daniel Compton, daniel dot compton at nccgroup dot com
+Developed by Daniel Compton
 
-https://github.com/nccgroup/vlan-hopping
+https://github.com/commonexploits/vlan-hopping
 
-Released under AGPL see LICENSE for more information
 
 Installing  
 =======================
-    git clone https://github.com/nccgroup/vlan-hopping.git
+    git clone https://github.com/commonexploits/vlan-hopping.git
 
 
 How To Use	
 =======================
-    ./frogger.sh
+    ./frogger2.sh
 
 Run as root.
 
@@ -54,7 +52,7 @@ Screen Shot
 Change Log
 =======================
 
-* Version 2.0 - (Coming soon) will support Cisco ISL encapsulation.
+* Version 2.0 - 14/09/16 - 44CON Release. Info/Help to publish soon. Added DTPScan, SNMP Hopping. Many improvements.
 * Version 1.8 - Added VMware detection and Intel NIC detection to assist with common problems within VMware.
 * Version 1.7 - New look, bug fixes and speed improvements.
 * Version 1.5 - Official release.
