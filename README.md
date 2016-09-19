@@ -50,9 +50,8 @@ Tested on Kali2. All dependencies will be checked for when running.
 
 Screen Shot    
 =======================
-<img src="http://www.commonexploits.com/wp-content/uploads/2012/05/new1.png" alt="Screenshot" style="max-width:100%;">
+<img src="http://www.commonexploits.com/images/frogger2.png" alt="Screenshot" style="max-width:100%;">
 
-<img src="http://www.commonexploits.com/wp-content/uploads/2012/05/new2.png" alt="Screenshot" style="max-width:100%;">
 
 Change Log
 =======================
