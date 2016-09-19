@@ -28,6 +28,11 @@ Features
 * Sniffs out and extracts all 802.1Q tagged VLAN packets within STP packets and extracts the unique IDs.
 * Auto arp-scans the discovered VLAN IDs and auto tags packets and scans each VLAN ID for live devices.
 * Auto option to auto create a VLAN interface within the found network to connect to that VLAN.
+* Added SNMP VLAN informaion extraction
+* Added SNMP VLAN Hopping
+* Added DTP Scan - Passively detect DTP modes and VLAN hopping possibility
+* Added CDP info extraction
+* 
 
 Requirements   
 =======================
@@ -38,7 +43,7 @@ Requirements
 * Vconfig (built into Backtrack)
 
 
-Tested on Backtrack 5 and Kali.
+Tested on Kali2. All dependencies will be checked for when running.
 
 * Notes for VMware. VLAN hopping generally (not just this script) can have issues within VMware if running the VM within Windows with certain Intel drivers. The Intel drivers strip off the tags before it reaches the VM. Either use an external USB ethernet card such as a DLink USB 2.0 DUB-E100 (old model 10/100 not gigabit) or boot into Backtrack nativiely from a USB stick. Intel has published a registry fix, to work on some models: http://www.intel.com/support/network/sb/CS-005897.htm - adding "MonitorMode" 1 to the registry does resolve the issue.
 
