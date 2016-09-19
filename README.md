@@ -32,7 +32,7 @@ Features
 * Added SNMP VLAN Hopping
 * Added DTP Scan - Passively detect DTP modes and VLAN hopping possibility
 * Added CDP info extraction
-* 
+
 
 Requirements   
 =======================
