@@ -8,6 +8,8 @@ Developed by Daniel Compton
 
 https://github.com/commonexploits/vlan-hopping
 
+Released under AGPL see LICENSE for more information
+
 
 Installing  
 =======================
