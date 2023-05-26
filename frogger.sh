@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
-# Frogger2 - The VLAN Hopper script
-# Daniel Compton
-# www.commonexploits.com
-# contact@commexploits.com
-# Twitter = @commonexploits
-# 09/2016
-# Tested on Kali/2 with Cisco devices - it can be used over SSH
+# Frogger - The VLAN Hopper script
+# Original developer: Daniel Compton / www.commonexploits.com / contact@commexploits.com / Twitter = @commonexploits - 09/2016
+# Actual developer: Jennifer Torres / xtormin.com / @xtormin
+# Tested on Kali in Raspberry Pi 4B with Cisco devices
 
 # User configuration Settings
 TAGSEC="30" #change this value for the number of seconds to sniff for 802.1Q/ISL tagged packets
@@ -47,11 +44,11 @@ clear
 control_c() {
 #remove any tmp files
 rm *.tmp 2>/dev/null
-printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} CTRL-C abort detected, exiting Frogger2."
+printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} CTRL-C abort detected, exiting Frogger."
 exit $?
 }
 
-VERSION="2.0"
+VERSION="3.0"
 frog() {
 tput setaf 2; tput bold sgr0; cat <<"EOT"
                            _   _
@@ -62,7 +59,7 @@ tput setaf 2; tput bold sgr0; cat <<"EOT"
                     .--.'._     _.'.--.
                     |   \/       \/   |
                     |   /         \   |
-                 ___\  /  / 2.0 \  \   \___
+                 ___\  /  / 3.0 \  \   \___
                 \__   (   \__ __/   )   __/
                  /__  |\    _/_    /|  __\
                    |_/ /_/\_\ /_/\_\ \_|
@@ -444,7 +441,7 @@ read -p "$TXT" choice
 case $choice in
 1) show_menusattackselfsnmpordtp; read_optionattackselfsnmpordtp  ;;
 2) show_menusattackothersnmpordtp; read_optionattackothersnmpordtp ;;
-3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger2 script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
+3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
 *) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
 esac
 }
@@ -465,7 +462,7 @@ read -p "$TXT" choice
 case $choice in
 1) dtpvlanin ; dtpattackextract ;;
 2) snmphopvlanin ;;
-3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger2 script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
+3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
 *) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
 esac
 }
@@ -486,7 +483,7 @@ read -p "$TXT" choice
 case $choice in
 1) dtpvlaninwhichport ;;
 2) snmphopvlaninwhichport ;;
-3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger2 script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
+3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
 *) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
 esac
 }
@@ -889,7 +886,7 @@ local choice
 read -p "$TXT" choice
 case $choice in
 1) onevlanids ;;
-2) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger2 script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
+2) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
 *) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
 esac
 }
@@ -1023,7 +1020,7 @@ ps -ef | grep "[Yy]ersinia dtp" >/dev/null
 				then
 					killall yersinia
 					
-					printf '\n\n \r%s %s\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger2 script exited."
+					printf '\n\n \r%s %s\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."
 					printf '\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} DTP attack has been stopped."
 					rm *.tmp 2>/dev/null 
 					exit 1
@@ -1079,7 +1076,7 @@ read -p "$TXT" choice
 case $choice in
 1) onecdpzero ;;
 2) twocdpzero ;;
-3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger2 script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
+3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
 *) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
 esac
 }
@@ -1120,7 +1117,7 @@ read -p "$TXT" choice
 case $choice in
 1) onecdp ;;
 2) twocdp ;;
-3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger2 script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
+3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
 *) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
 esac
 }
@@ -1374,7 +1371,7 @@ TXT=$(printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "${BRIGHT}Enter choice: 
                 4) clear ; printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} 4. SNMP VLAN Hop Selected." ; four;;
                 5) clear ; printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} 5. CDP Extract Selected." ; five ;;
 				6) clear ; printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} 6. SNMP Extract Selected." ; six ;;
-                7) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger2 script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
+                7) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
                 *) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
         esac
 }
