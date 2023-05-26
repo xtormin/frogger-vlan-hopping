@@ -130,12 +130,6 @@ if [ $? -eq 1 ]
 	then
 		printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Unable to find the required arp-scan program, install at least version 1.8 and try again. Download from www.nta-monitor.com."
 		exit 1
-else
-	if [[ "$ARPVER" < "1.8" ]]
-		then
-			printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Unable to find version 1.8 of arp-scan, 1.8 is required for VLAN tagging. Install at least version 1.8 and try again. Download from www.nta-monitor.com."
-			exit 1
-	fi
 fi
 
 #Check for ethtool
