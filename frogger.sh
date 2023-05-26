@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Frogger - The VLAN Hopper script
 # Original developer: Daniel Compton / www.commonexploits.com / contact@commexploits.com / Twitter = @commonexploits - 09/2016
-# Actual developer: Jennifer Torres / xtormin.com / @xtormin
+# Current developer: Jennifer Torres / xtormin.com / @xtormin
 # Tested on Kali in Raspberry Pi 4B with Cisco devices
 
 # User configuration Settings
