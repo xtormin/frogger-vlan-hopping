@@ -1,6 +1,6 @@
 # Frogger - VLAN Hopping
 
-Simple VLAN enumeration and hopping script.
+This tool allows the capture and analysis of CDP, DTP and VTP packets, with the objective of extracting information from the network and automating the enumeration and exploitation of deficiencies that allow hopping between VLANs.
 
 ## Install
 
