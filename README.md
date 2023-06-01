@@ -5,7 +5,7 @@ This tool allows the capture and analysis of CDP, DTP and VTP packets, with the 
 ## Install
 
 ```commandline
-git clone https://github.com/xtormin/vlan-hopping-frogger.git
+git clone https://github.com/xtormin/frogger-vlan-hopping.git
 ```
 
 ## Usage
